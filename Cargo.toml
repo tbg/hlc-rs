@@ -3,5 +3,17 @@ name = "hlc"
 version = "0.1.0"
 authors = ["Tobias Schottdorf <tobias.schottdorf@gmail.com>"]
 
+description = "hybrid logical clock"
+
+documentation = "https://github.com/tschottdorf/hlc-rs"
+homepage = "https://github.com/tschottdorf/hlc-rs"
+repository = "https://github.com/tschottdorf/hlc-rs"
+
+readme = "README.md"
+
+keywords = ["hybrid", "logical", "clock", "distributed", "monotonic"]
+
+license = "MIT"
+
 [dependencies]
 time = "0.1"
