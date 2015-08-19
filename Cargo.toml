@@ -1,0 +1,7 @@
+[package]
+name = "hlc"
+version = "0.1.0"
+authors = ["Tobias Schottdorf <tobias.schottdorf@gmail.com>"]
+
+[dependencies]
+time = "0.1"
