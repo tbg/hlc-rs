@@ -4,22 +4,111 @@
 
 extern crate time;
 
+use std::fmt::{Formatter, Display, Error};
+use std::sync::Mutex;
+
+/// The `HLTimespec` type stores a hybrid logical timestamp (also called
+/// timespec for symmetry with time::Timespec).
+///
+/// Such a timestamp is comprised of an "ordinary" wall time and
+/// a logical component. Timestamps are compared by wall time first,
+/// logical second.
+///
+/// # Examples
+///
+/// ```
+/// use hlc::HLTimespec;
+/// let early = HLTimespec::new(1, 0, 0);
+/// let middle = HLTimespec::new(1, 1, 0);
+/// let late = HLTimespec::new(1, 1, 1);
+/// assert!(early < middle && middle < late);
+/// ```
 #[derive(Debug,Clone,Copy,Eq,PartialEq,PartialOrd,Ord)]
 pub struct HLTimespec {
     wall: time::Timespec,
     logical: u16,
 }
 
-pub struct State<F: FnMut() -> time::Timespec> {
+impl HLTimespec {
+    /// Creates a new hybrid logical timestamp with the given seconds,
+    /// nanoseconds, and logical ticks.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hlc::HLTimespec;
+    /// let ts = HLTimespec::new(1, 2, 3);
+    /// assert_eq!(format!("{}", ts), "1.2+3");
+    /// ```
+    pub fn new(s: i64, ns: i32, l: u16) -> HLTimespec {
+        HLTimespec { wall: time::Timespec { sec: s, nsec: ns }, logical: l }
+    }
+}
+
+impl Display for HLTimespec {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        f.write_str(&format!("{}.{}+{}", self.wall.sec, self.wall.nsec, self.logical))
+    }
+}
+
+/// `State` is a hybrid logical clock.
+///
+/// # Examples
+///
+/// ```
+/// use hlc::{HLTimespec, State};
+/// let mut s = State::new();
+/// println!("{}", s.get_time()); // attach to outgoing event
+/// let ext_event_ts = HLTimespec::new(12345, 67, 89); // external event's timestamp
+/// let ext_event_recv_ts = s.update(ext_event_ts);
+/// ```
+///
+/// If access to the clock isn't serializable, a convenience method returns
+/// a `State` wrapped in a `Mutex`:
+///
+/// ```
+/// use hlc::State;
+/// let mut mu = State::new_sendable();
+/// {
+///     let mut s = mu.lock().unwrap();
+///     s.get_time();
+/// }
+/// ```
+pub struct State<F> {
     s: HLTimespec,
     now: F,
 }
 
-impl<F: FnMut() -> time::Timespec> State<F> {
+impl State<()> {
+    // Creates a standard hybrid logical clock, using `time::get_time` as
+    // supplier of the physical clock's wall time.
     pub fn new() -> State<fn() -> time::Timespec> {
         State::new_with(time::get_time)
     }
 
+    // Returns the result of `State::new()`, wrapped in a `Mutex`.
+    pub fn new_sendable() -> Mutex<State<fn() -> time::Timespec>> {
+        Mutex::new(State::new())
+    }
+}
+
+impl<F: FnMut() -> time::Timespec> State<F> {
+    /// Creates a hybrid logical clock with the supplied wall time. This is
+    /// useful for tests or settings in which an alternative clock is used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate hlc;
+    /// # extern crate time;
+    /// # fn main() {
+    /// use hlc::{HLTimespec, State};
+    /// let mut times = vec![time::Timespec { sec: 42, nsec: 9919 }];
+    /// let mut s = State::new_with(move || times.pop().unwrap());
+    /// let mut ts = s.get_time();
+    /// assert_eq!(format!("{}", ts), "42.9919+0");
+    /// # }
+    /// ```
     pub fn new_with(now: F) -> State<F> {
         State {
             s: HLTimespec { wall: time::Timespec { sec: 0, nsec: 0 }, logical: 0 },
@@ -27,6 +116,7 @@ impl<F: FnMut() -> time::Timespec> State<F> {
         }
     }
 
+    /// Generates a timestamp from the clock.
     pub fn get_time(&mut self) -> HLTimespec {
         let s = &mut self.s;
         let wall = (self.now)();
@@ -39,6 +129,8 @@ impl<F: FnMut() -> time::Timespec> State<F> {
         s.clone()
     }
 
+    /// Assigns a timestamp to an event which happened at the given timestamp
+    /// on a remote system.
     pub fn update(&mut self, event: HLTimespec) -> HLTimespec {
         let (wall, s) = ((self.now)(), &mut self.s);
 
@@ -70,9 +162,8 @@ mod tests {
     }
 
     fn hlts(s: i64, ns: i32, l: u16) -> HLTimespec {
-        HLTimespec { wall: ts(s, ns), logical: l }
+        HLTimespec::new(s, ns, l)
     }
-
 
     #[test]
     fn it_works() {

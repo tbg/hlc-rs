@@ -1,6 +1,6 @@
 [package]
 name = "hlc"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Tobias Schottdorf <tobias.schottdorf@gmail.com>"]
 
 description = "hybrid logical clock"
