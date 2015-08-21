@@ -5,7 +5,7 @@ authors = ["Tobias Schottdorf <tobias.schottdorf@gmail.com>"]
 
 description = "hybrid logical clock"
 
-documentation = "https://github.com/tschottdorf/hlc-rs"
+documentation = "https://tschottdorf.github.io/hlc-rs/doc/hlc/"
 homepage = "https://github.com/tschottdorf/hlc-rs"
 repository = "https://github.com/tschottdorf/hlc-rs"
 
