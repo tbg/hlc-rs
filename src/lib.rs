@@ -10,18 +10,23 @@ pub struct HLTimespec {
     logical: u16,
 }
 
-pub struct State {
+pub struct State<F: FnMut() -> time::Timespec> {
     s: HLTimespec,
-    now: Box<FnMut() -> time::Timespec>,
+    now: F,
 }
 
-impl State {
-    pub fn new() -> State {
+impl<F: FnMut() -> time::Timespec> State<F> {
+    pub fn new() -> State<fn() -> time::Timespec> {
+        State::new_with(time::get_time)
+    }
+
+    pub fn new_with(now: F) -> State<F> {
         State {
             s: HLTimespec { wall: time::Timespec { sec: 0, nsec: 0 }, logical: 0 },
-            now: Box::new(time::get_time),
+            now: now,
         }
     }
+
     pub fn get_time(&mut self) -> HLTimespec {
         let s = &mut self.s;
         let wall = (self.now)();
@@ -33,6 +38,7 @@ impl State {
         }
         s.clone()
     }
+
     pub fn update(&mut self, event: HLTimespec) -> HLTimespec {
         let (wall, s) = ((self.now)(), &mut self.s);
 
@@ -89,12 +95,9 @@ mod tests {
             (ts(0,0), hlts(5,0,50), hlts(5,0,101)), // event at state, lower logical than state
         ];
 
-        // Prepare fake clock.
+        // Prepare fake clock and create State.
         let mut times = ops.iter().rev().map(|op| op.0).collect::<Vec<time::Timespec>>();
-        let now: Box<FnMut() -> time::Timespec> = Box::new(move || times.pop().unwrap());
-
-        let mut s = State::new();
-        s.now = now;
+        let mut s = State::new_with(move || times.pop().unwrap());
 
         for op in &ops {
             let t = if op.1 == zero {
