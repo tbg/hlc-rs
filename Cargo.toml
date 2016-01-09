@@ -1,6 +1,6 @@
 [package]
 name = "hlc"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Tobias Schottdorf <tobias.schottdorf@gmail.com>"]
 
 description = "hybrid logical clock"
@@ -13,7 +13,7 @@ readme = "README.md"
 
 keywords = ["hybrid", "logical", "clock", "distributed", "monotonic"]
 
-license = "MIT"
+license = "MIT/Apache"
 
 [dependencies]
 time = "0.1"
