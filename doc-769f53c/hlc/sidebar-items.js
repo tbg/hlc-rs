@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["HLTimespec","The `HLTimespec` type stores a hybrid logical timestamp (also called timespec for symmetry with time::Timespec)."],["State","`State` is a hybrid logical clock."]]});
