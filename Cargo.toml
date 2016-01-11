@@ -13,7 +13,7 @@ readme = "README.md"
 
 keywords = ["hybrid", "logical", "clock", "distributed", "monotonic"]
 
-license = "MIT/Apache"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 time = "0.1"
